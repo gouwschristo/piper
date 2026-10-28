@@ -7,6 +7,7 @@ import gi
 from .mousemap import MouseMap
 from .ratbagd import RatbagdDevice, RatbagdProfile
 from .util.gobject import connect_signal_with_weak_ref
+from .util.valueselector import ValueSelector
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gtk  # noqa: E402
@@ -21,17 +22,18 @@ class AdvancedPage(Gtk.Box):
     __gtype_name__ = "AdvancedPage"
 
     angle_snapping: Gtk.Switch = Gtk.Template.Child()  # type: ignore
-    bhop_timeout: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
-    debounce: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
-    device_mode: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
+    bhop_timeout: ValueSelector = Gtk.Template.Child()  # type: ignore
+    debounce: ValueSelector = Gtk.Template.Child()  # type: ignore
+    debounce_row: Gtk.Box = Gtk.Template.Child()  # type: ignore
+    device_mode: ValueSelector = Gtk.Template.Child()  # type: ignore
     device_mode_note: Gtk.Label = Gtk.Template.Child()  # type: ignore
     device_mode_row: Gtk.Box = Gtk.Template.Child()  # type: ignore
-    lod: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
+    lod: ValueSelector = Gtk.Template.Child()  # type: ignore
     lod_note: Gtk.Label = Gtk.Template.Child()  # type: ignore
-    power_off_timeout: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
-    power_save_timeout: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
-    report_rate: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
-    shift_resolution: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
+    power_off_timeout: ValueSelector = Gtk.Template.Child()  # type: ignore
+    power_save_timeout: ValueSelector = Gtk.Template.Child()  # type: ignore
+    report_rate: ValueSelector = Gtk.Template.Child()  # type: ignore
+    shift_resolution: ValueSelector = Gtk.Template.Child()  # type: ignore
 
     def __init__(
         self, device: RatbagdDevice, profile: RatbagdProfile, *args, **kwargs
@@ -42,15 +44,14 @@ class AdvancedPage(Gtk.Box):
         self._profile = profile
         self._combo_entries = {}
 
-        for ms in profile.debounces:
-            self.debounce.append(str(ms), str(ms))
+        self.debounce.set_entries([(ms, str(ms)) for ms in profile.debounces])
+        self.debounce_row.set_no_show_all(True)
         if not profile.debounces:
-            # No values means the device does not do debounce at all; an empty
-            # but enabled dropdown is worse than a disabled one.
-            self.debounce.set_sensitive(False)
-            self.debounce.set_tooltip_text(
-                _("This device does not support debounce time")
-            )
+            # The device does not do debounce at all: an empty selector is
+            # worse than no selector, so hide the row.
+            self.debounce_row.hide()
+        else:
+            self._show_subtree(self.debounce_row)
 
         self._handler_debounce = self.debounce.connect(
             "changed", self._on_debounce_combo_changed
@@ -69,8 +70,7 @@ class AdvancedPage(Gtk.Box):
         # LIGHTSPEED mice). Listing them dynamically keeps every rate the
         # profile reports selectable.
         self._rates = list(profile.report_rates)
-        for hz in self._rates:
-            self.report_rate.append(str(hz), str(hz))
+        self.report_rate.set_entries([(hz, str(hz)) for hz in self._rates])
 
         self.report_rate.set_sensitive(
             profile.report_rate != 0 and len(self._rates) != 0
@@ -126,18 +126,19 @@ class AdvancedPage(Gtk.Box):
 
         with self.debounce.handler_block(self._handler_debounce):
             if profile.debounce in profile.debounces:
-                idx = profile.debounces.index(profile.debounce)
-                self.debounce.set_active(idx)
+                self.debounce.set_active_id(str(profile.debounce))
             elif profile.debounces:
-                self.debounce.set_active(0)
+                self.debounce.set_active_id(str(profile.debounces[0]))
             else:
-                self.debounce.set_active(-1)
+                self.debounce.set_active_id("")
 
-    def _on_debounce_combo_changed(self, combo: Gtk.ComboBoxText) -> None:
-        idx = combo.get_active()
+    def _on_debounce_combo_changed(self, combo: ValueSelector) -> None:
+        value = self._combo_value(combo)
+        if value is None or value not in self._profile.debounces:
+            return
         profile = self._profile
         with profile.handler_block(self._profile_debounce_time_changed_handler):
-            profile.debounce = profile.debounces[idx]
+            profile.debounce = value
 
     def _on_angle_snapping_switch_state_set(
         self, button: Gtk.Switch, state: bool
@@ -155,7 +156,7 @@ class AdvancedPage(Gtk.Box):
         with self.angle_snapping.handler_block(self._angle_snapping_switch_handler):
             self.angle_snapping.set_active(self._profile.angle_snapping == 1)
 
-    def _make_combo(self, combo: Gtk.ComboBoxText, entries) -> None:
+    def _make_combo(self, combo: ValueSelector, entries) -> None:
         """Fill a combo with (value, label) pairs and select the current one.
 
         GtkComboBoxText rather than GtkComboBox: with a hand-built cell
@@ -163,16 +164,14 @@ class AdvancedPage(Gtk.Box):
         opens collapsed until it is scrolled. The list is kept here because
         GtkComboBoxText does not expose its model.
         """
-        combo.remove_all()
-        for value, label in entries:
-            combo.append(str(value), label)
+        combo.set_entries(list(entries))
         self._combo_entries[combo] = list(entries)
 
-    def _combo_select(self, combo: Gtk.ComboBoxText, handler, value) -> None:
+    def _combo_select(self, combo: ValueSelector, handler, value) -> None:
         with combo.handler_block(handler):
             combo.set_active_id(str(value))
 
-    def _combo_value(self, combo: Gtk.ComboBoxText):
+    def _combo_value(self, combo: ValueSelector):
         active = combo.get_active_id()
         return None if active is None else int(active)
 
@@ -192,7 +191,7 @@ class AdvancedPage(Gtk.Box):
             combo, handler_attr, signal, setter,
         )
 
-    def _on_value_combo_changed(self, combo: Gtk.ComboBoxText, setter) -> None:
+    def _on_value_combo_changed(self, combo: ValueSelector, setter) -> None:
         value = self._combo_value(combo)
         if value is None:
             return
@@ -276,7 +275,7 @@ class AdvancedPage(Gtk.Box):
             self, res, "notify::lod", self._on_resolution_lod_changed
         )
 
-    def _on_lod_changed(self, combo: Gtk.ComboBoxText) -> None:
+    def _on_lod_changed(self, combo: ValueSelector) -> None:
         value = self._combo_value(combo)
         if value is None or self._lod_resolution is None:
             return
@@ -285,6 +284,19 @@ class AdvancedPage(Gtk.Box):
     def _on_resolution_lod_changed(self, res, _pspec=None) -> None:
         if self._lod_resolution is res:
             self._combo_select(self.lod, self._lod_handler, res.lod)
+
+    @staticmethod
+    def _show_subtree(widget: Gtk.Widget) -> None:
+        """Show a widget and its children even if it has no_show_all set.
+
+        gtk_widget_show_all() does nothing at all on a widget that carries
+        no_show_all, so the flag has to come off for the call and go back on
+        afterwards; otherwise a later window-wide show_all() would re-show a row
+        we deliberately hid.
+        """
+        widget.set_no_show_all(False)
+        widget.show_all()
+        widget.set_no_show_all(True)
 
     def _setup_device_mode(self, device: RatbagdDevice) -> None:
         # Device mode is a device-wide toggle, not a profile value: the mouse
@@ -297,6 +309,11 @@ class AdvancedPage(Gtk.Box):
             self.device_mode_row.hide()
             self.device_mode_note.hide()
             return
+
+        # set_no_show_all() above stops show_all() from descending into the row,
+        # so the subtree has to be shown explicitly or its label never appears.
+        self._show_subtree(self.device_mode_row)
+        self._show_subtree(self.device_mode_note)
 
         self._device = device
         self._make_combo(
@@ -321,7 +338,7 @@ class AdvancedPage(Gtk.Box):
             self._on_device_onboard_mode_changed,
         )
 
-    def _on_device_mode_changed(self, combo: Gtk.ComboBoxText) -> None:
+    def _on_device_mode_changed(self, combo: ValueSelector) -> None:
         value = self._combo_value(combo)
         if value is None or self._device is None:
             return
@@ -342,13 +359,13 @@ class AdvancedPage(Gtk.Box):
             "shift-resolution", "shift_resolution", profile.shift_resolution != -1,
         )
 
-    def _on_report_rate_changed(self, combo: Gtk.ComboBoxText) -> None:
-        idx = combo.get_active()
-        if idx < 0 or idx >= len(self._rates):
+    def _on_report_rate_changed(self, combo: ValueSelector) -> None:
+        value = self._combo_value(combo)
+        if value is None or value not in self._rates:
             return
         profile = self._profile
         with profile.handler_block(self._profile_report_rate_changed_handler):
-            profile.report_rate = self._rates[idx]
+            profile.report_rate = value
 
     def _on_profile_report_rate_changed(
         self, profile: RatbagdProfile, pspec: Optional[GObject.ParamSpec]
@@ -360,8 +377,8 @@ class AdvancedPage(Gtk.Box):
 
         with self.report_rate.handler_block(self._handler_report_rate):
             if rate in self._rates:
-                self.report_rate.set_active(self._rates.index(rate))
+                self.report_rate.set_active_id(str(rate))
             else:
                 # A rate the device no longer advertises: show nothing rather
                 # than silently claiming a different rate is selected.
-                self.report_rate.set_active(-1)
+                self.report_rate.set_active_id("")

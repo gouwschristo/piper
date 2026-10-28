@@ -7,6 +7,7 @@ import gi
 from gettext import gettext as _
 
 from .ratbagd import RatbagdResolution
+from .util.valueselector import ValueSelector
 from .util.gobject import connect_signal_with_weak_ref
 
 gi.require_version("Gtk", "3.0")
@@ -53,7 +54,7 @@ class ResolutionRow(Gtk.ListBoxRow):
     disable_button: Gtk.Button = Gtk.Template.Child()  # type: ignore
     dpi_label: Gtk.Label = Gtk.Template.Child()  # type: ignore
     dpi_entry: _DPIEntry = Gtk.Template.Child()  # type: ignore
-    lod: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
+    lod: ValueSelector = Gtk.Template.Child()  # type: ignore
     lod_box: Gtk.Box = Gtk.Template.Child()  # type: ignore
     revealer: Gtk.Revealer = Gtk.Template.Child()  # type: ignore
     scale: Gtk.Scale = Gtk.Template.Child()  # type: ignore
@@ -125,8 +126,7 @@ class ResolutionRow(Gtk.ListBoxRow):
         self._lod_labels = [
             _(RatbagdResolution.LOD_DESCRIPTION[value]) for value in self._lod_values
         ]
-        for value, label in zip(self._lod_values, self._lod_labels):
-            self.lod.append(str(value), label)
+        self.lod.set_entries(list(zip(self._lod_values, self._lod_labels)))
 
         if self.CAP_LOD:
             self._lod_handler = self.lod.connect("changed", self._on_lod_changed)
@@ -146,9 +146,9 @@ class ResolutionRow(Gtk.ListBoxRow):
             if lod in self._lod_values:
                 self.lod.set_active_id(str(lod))
             else:
-                self.lod.set_active(-1)
+                self.lod.set_active_id("")
 
-    def _on_lod_changed(self, combo: Gtk.ComboBoxText) -> None:
+    def _on_lod_changed(self, combo: ValueSelector) -> None:
         active = combo.get_active_id()
         if active is None:
             return

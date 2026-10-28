@@ -142,6 +142,11 @@ test(
 )
 
 test(
+  'value-selector',
+  find_program('tests/value-selector-test.py'),
+)
+
+test(
   'receiver-pairing',
   find_program('tests/receiver-pairing-test.py'),
   env : ['PIPER_PKGDATADIR=@0@'.format(pkgdatadir)],

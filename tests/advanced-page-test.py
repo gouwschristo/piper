@@ -81,7 +81,7 @@ class StubMap(Gtk.Box):
 ap.MouseMap = StubMap
 
 page = ap.AdvancedPage(None, FakeProfile())
-labels = [row[0] for row in page.report_rate.get_model()]
+labels = [str(value) for value, _ in page.report_rate.get_entries()]
 assert labels == [str(r) for r in RATES], f"unexpected rates: {labels}"
 assert page.report_rate.get_sensitive()
 
