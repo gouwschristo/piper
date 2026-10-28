@@ -21,8 +21,9 @@ from typing import List, Optional, Tuple
 
 import gi
 
+gi.require_version("Gdk", "3.0")
 gi.require_version("Gtk", "3.0")
-from gi.repository import GObject, Gtk, Pango  # noqa: E402
+from gi.repository import Gdk, GObject, Gtk, Pango  # noqa: E402
 
 
 class ValueSelector(Gtk.MenuButton):
@@ -135,6 +136,19 @@ class ValueSelector(Gtk.MenuButton):
             self.emit("changed")
 
     def _on_popover_shown(self, popover: Gtk.Popover) -> None:
+        # Match the popover to the control and anchor it exactly underneath, so
+        # it reads as this control's list rather than a stray menu.
+        width = self.get_allocated_width()
+        if width > 0:
+            rect = Gdk.Rectangle()
+            rect.x = 0
+            rect.y = 0
+            rect.width = width
+            rect.height = max(self.get_allocated_height(), 1)
+            popover.set_pointing_to(rect)
+            popover.set_position(Gtk.PositionType.BOTTOM)
+            popover.set_size_request(width, -1)
+
         # Mark the selected row so the list opens showing where you are. Every
         # row is visible anyway, so this never scrolls anything.
         for row in self._listbox.get_children():

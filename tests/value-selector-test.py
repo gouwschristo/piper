@@ -112,6 +112,13 @@ assert allocated_height >= natural_height, (
     f"popup is {allocated_height}px for {natural_height}px of rows: it would scroll"
 )
 
+# The popup is anchored to the control and is at least as wide, so it reads as
+# this control's list instead of a narrow stray menu.
+assert popover.get_allocated_width() >= selector.get_allocated_width(), (
+    f"popup is {popover.get_allocated_width()}px wide for a "
+    f"{selector.get_allocated_width()}px control"
+)
+
 # activating a row writes the value and closes the popup
 target = [row for row in listbox.get_children() if row.value == 600][0]
 listbox.emit("row-activated", target)
