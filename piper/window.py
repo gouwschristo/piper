@@ -159,11 +159,18 @@ class Window(Gtk.ApplicationWindow):
             self._perspective_add_back_button(perspective, ratbag)
         self._perspective_add_primary_menu(perspective)
 
+    @staticmethod
+    def _welcome_is_useful(ratbag: Ratbagd) -> bool:
+        # The welcome page is a device picker, but it also hosts the receiver
+        # rows: with a single device it is still the only place to pair one.
+        return len(ratbag.devices) > 1 or len(ratbag.receivers) > 0
+
     def _present_welcome_perspective(self, devices: List[RatbagdDevice]) -> None:
         # Present the welcome perspective for the user to select one of their
         # devices.
         welcome_perspective: WelcomePerspective = self._get_child("welcome_perspective")  # type: ignore
         welcome_perspective.set_devices(devices)
+        welcome_perspective.set_receivers(self._init_ratbagd().receivers)
 
         self.stack_titlebar.set_visible_child_name(welcome_perspective.name)
         self.stack_perspectives.set_visible_child_name(welcome_perspective.name)
@@ -215,7 +222,7 @@ class Window(Gtk.ApplicationWindow):
         button_back = Gtk.Button.new_from_icon_name(
             "go-previous-symbolic", Gtk.IconSize.BUTTON
         )
-        button_back.set_visible(len(ratbag.devices) > 1)
+        button_back.set_visible(self._welcome_is_useful(ratbag))
         button_back.connect(
             "clicked",
             lambda _, ratbag: self._present_welcome_perspective(ratbag.devices),
@@ -223,7 +230,7 @@ class Window(Gtk.ApplicationWindow):
         )
         ratbag.connect(
             "notify::devices",
-            lambda ratbag, _: button_back.set_visible(len(ratbag.devices) > 1),
+            lambda ratbag, _: button_back.set_visible(self._welcome_is_useful(ratbag)),
         )
         perspective.titlebar.add(button_back)
         # Place the button first in the titlebar.

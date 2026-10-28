@@ -3,7 +3,8 @@
 from typing import List, Optional
 
 from .devicerow import DeviceRow
-from .ratbagd import RatbagdDevice
+from .ratbagd import RatbagdDevice, RatbagdReceiver
+from .receiverrow import ReceiverRow
 
 import gi
 
@@ -26,6 +27,8 @@ class WelcomePerspective(Gtk.Box):
         ),
     }
 
+    box_receivers: Gtk.Box = Gtk.Template.Child()  # type: ignore
+    frame_receivers: Gtk.Frame = Gtk.Template.Child()  # type: ignore
     listbox: Gtk.ListBox = Gtk.Template.Child()  # type: ignore
     _titlebar: Gtk.HeaderBar = Gtk.Template.Child()  # type: ignore
 
@@ -34,6 +37,22 @@ class WelcomePerspective(Gtk.Box):
         Gtk.Box.__init__(self, *args, **kwargs)
         self.listbox.set_sort_func(self._listbox_sort_func)
         self.listbox.set_header_func(self._listbox_header_func)
+
+    def set_receivers(self, receivers: List[RatbagdReceiver]) -> None:
+        """Sets the receivers to present below the device list.
+
+        @param receivers The receivers to present, as [ratbagd.RatbagdReceiver]
+        """
+        for child in self.box_receivers.get_children():
+            child.destroy()
+        for receiver in receivers:
+            self.box_receivers.pack_start(ReceiverRow(receiver), False, False, 0)
+
+        # A receiver is only worth showing when it is a receiver: hide the whole
+        # section when there is none, so the page stays a device picker.
+        self.frame_receivers.set_no_show_all(not receivers)
+        self.frame_receivers.set_visible(bool(receivers))
+        self.box_receivers.show_all()
 
     def set_devices(self, devices: List[RatbagdDevice]) -> None:
         """Sets the devices to present to the user.

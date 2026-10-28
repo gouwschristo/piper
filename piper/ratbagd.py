@@ -256,7 +256,8 @@ class _RatbagdDBus(GObject.GObject):
             )
             if res in EXCEPTION_TABLE:
                 raise EXCEPTION_TABLE[res]
-            return res.unpack()[0]  # Result is always a tuple
+            unpacked = res.unpack()
+            return unpacked[0] if unpacked else None  # methods may return void
         except GLib.Error as e:
             if e.code == Gio.IOErrorEnum.TIMED_OUT:
                 raise RatbagdDBusTimeoutError(e.message) from e
@@ -297,6 +298,8 @@ class Ratbagd(_RatbagdDBus):
         if self.api_version != api_version:
             raise RatbagdIncompatibleError(self.api_version or -1, api_version)
         self._devices = [RatbagdDevice(objpath) for objpath in result or []]
+        receivers = self._get_dbus_property("Receivers")
+        self._receivers = [RatbagdReceiver(objpath) for objpath in receivers or []]
         self._proxy.connect("notify::g-name-owner", self._on_name_owner_changed)
 
     def _on_name_owner_changed(self, *kwargs):
@@ -329,6 +332,11 @@ class Ratbagd(_RatbagdDBus):
     def devices(self):
         """A list of RatbagdDevice objects supported by ratbagd."""
         return self._devices
+
+    @GObject.Property
+    def receivers(self):
+        """A list of RatbagdReceiver objects for the Logitech receivers."""
+        return self._receivers
 
     def __getitem__(self, id):
         """Returns the requested device, or None."""
@@ -466,6 +474,70 @@ class RatbagdDevice(_RatbagdDBus):
         device. No further interaction is required by the client.
         """
         self._dbus_call("Commit", "")
+
+
+class RatbagdReceiver(_RatbagdDBus):
+    """Represents a Logitech receiver.
+
+    A receiver has no profiles: it only knows which devices are paired to it and
+    can open a pairing window so another device can join.
+    """
+
+    def __init__(self, object_path):
+        super().__init__("Receiver", object_path)
+
+    def get_devices(self):
+        """Return the paired devices as a list of
+        (index, name, kind, serial) tuples."""
+        # _dbus_call() cannot be used here: it keys the result into a dict to
+        # look for a known error.
+        res = self._proxy.call_sync(
+            "GetDevices",
+            GLib.Variant("()", ()),
+            Gio.DBusCallFlags.NO_AUTO_START,
+            5000,
+            None,
+        )
+        return list(res.unpack()[0])
+
+    def open_pairing_window(self, timeout=30):
+        """Arm the receiver's pairing window for timeout seconds. It expires on
+        its own in the receiver's firmware."""
+        # Longer than the default: the first call after ratbagd is activated
+        # can wait for a full udev enumeration.
+        self._proxy.call_sync(
+            "OpenPairingWindow",
+            GLib.Variant("(u)", (timeout,)),
+            Gio.DBusCallFlags.NO_AUTO_START,
+            10000,
+            None,
+        )
+
+    def close_pairing_window(self):
+        """Close the pairing window early. Does nothing when none is open."""
+        try:
+            self._proxy.call_sync(
+                "ClosePairingWindow",
+                GLib.Variant("()", ()),
+                Gio.DBusCallFlags.NO_AUTO_START,
+                5000,
+                None,
+            )
+        except GLib.Error:
+            # Already expired, or the receiver is gone: nothing to do.
+            pass
+
+    @GObject.Property
+    def firmware_version(self):
+        return self._get_dbus_property("FirmwareVersion")
+
+    @GObject.Property
+    def pairing_open(self):
+        return self._get_dbus_property("PairingOpen")
+
+    @GObject.Property
+    def path(self):
+        return self._object_path
 
 
 class RatbagdProfile(_RatbagdDBus):

@@ -142,6 +142,12 @@ test(
 )
 
 test(
+  'receiver-pairing',
+  find_program('tests/receiver-pairing-test.py'),
+  env : ['PIPER_PKGDATADIR=@0@'.format(pkgdatadir)],
+)
+
+test(
   'device-status',
   find_program('tests/device-status-test.py'),
   env : ['PIPER_PKGDATADIR=@0@'.format(pkgdatadir)],
