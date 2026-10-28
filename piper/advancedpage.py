@@ -7,7 +7,6 @@ import gi
 from .mousemap import MouseMap
 from .ratbagd import RatbagdDevice, RatbagdProfile
 from .util.gobject import connect_signal_with_weak_ref
-from .util.popup import ensure_popup_sized
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GObject, Gtk  # noqa: E402
@@ -100,18 +99,6 @@ class AdvancedPage(Gtk.Box):
         self._setup_shift_resolution(profile)
         self._setup_lod(profile)
         self._setup_device_mode(device)
-
-        for combo in (
-            self.report_rate,
-            self.debounce,
-            self.bhop_timeout,
-            self.power_save_timeout,
-            self.power_off_timeout,
-            self.shift_resolution,
-            self.lod,
-            self.device_mode,
-        ):
-            ensure_popup_sized(combo)
 
         self._angle_snapping_switch_handler = self.angle_snapping.connect(
             "state-set", self._on_angle_snapping_switch_state_set

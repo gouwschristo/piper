@@ -7,7 +7,6 @@ import gi
 from gettext import gettext as _
 
 from .ratbagd import RatbagdResolution
-from .util.popup import ensure_popup_sized
 from .util.gobject import connect_signal_with_weak_ref
 
 gi.require_version("Gtk", "3.0")
@@ -128,7 +127,6 @@ class ResolutionRow(Gtk.ListBoxRow):
         ]
         for value, label in zip(self._lod_values, self._lod_labels):
             self.lod.append(str(value), label)
-        ensure_popup_sized(self.lod)
 
         if self.CAP_LOD:
             self._lod_handler = self.lod.connect("changed", self._on_lod_changed)
