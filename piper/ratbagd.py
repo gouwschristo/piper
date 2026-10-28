@@ -674,12 +674,24 @@ class RatbagdResolution(_RatbagdDBus):
 
     CAP_SEPARATE_XY_RESOLUTION = 1
     CAP_DISABLE = 2
+    CAP_LOD = 3
+
+    # Valid lift-off distance values, as stored by the device.
+    LOD_LOW = 1
+    LOD_MEDIUM = 2
+    LOD_HIGH = 3
+    LOD_DESCRIPTION = {
+        LOD_LOW: N_("Low"),
+        LOD_MEDIUM: N_("Medium"),
+        LOD_HIGH: N_("High"),
+    }
 
     def __init__(self, object_path):
         super().__init__("Resolution", object_path)
         self._active = self._get_dbus_property("IsActive")
         self._default = self._get_dbus_property("IsDefault")
         self._disabled = self._get_dbus_property("IsDisabled")
+        self._lod = self._get_dbus_property("Lod")
         self._resolution = self._convert_resolution_from_dbus(
             self._get_dbus_property_nonnull("Resolution")
         )
@@ -724,6 +736,16 @@ class RatbagdResolution(_RatbagdDBus):
             if disabled != self._disabled:
                 self._disabled = disabled
                 self.notify("is-disabled")
+
+        try:
+            lod = changed_props["Lod"]
+        except KeyError:
+            # Different property changed, skip.
+            pass
+        else:
+            if lod != self._lod:
+                self._lod = lod
+                self.notify("lod")
 
     @GObject.Property
     def capabilities(self):
@@ -794,6 +816,17 @@ class RatbagdResolution(_RatbagdDBus):
     def is_disabled(self):
         """True if this is currently disabled, False otherwise"""
         return self._disabled
+
+    @GObject.Property
+    def lod(self):
+        """The lift-off distance of this resolution: 1 (low), 2 (medium) or
+        3 (high). 0 if the device does not support it."""
+        return self._lod
+
+    @lod.setter
+    def lod(self, lod):
+        """Set the lift-off distance, see `lod`."""
+        self._set_dbus_property("Lod", "u", lod)
 
     def set_active(self):
         """Set this resolution to be the active one."""

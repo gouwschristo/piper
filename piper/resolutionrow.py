@@ -4,6 +4,8 @@ from typing import Optional
 
 import gi
 
+from gettext import gettext as _
+
 from .ratbagd import RatbagdResolution
 from .util.gobject import connect_signal_with_weak_ref
 
@@ -51,11 +53,14 @@ class ResolutionRow(Gtk.ListBoxRow):
     disable_button: Gtk.Button = Gtk.Template.Child()  # type: ignore
     dpi_label: Gtk.Label = Gtk.Template.Child()  # type: ignore
     dpi_entry: _DPIEntry = Gtk.Template.Child()  # type: ignore
+    lod: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
+    lod_box: Gtk.Box = Gtk.Template.Child()  # type: ignore
     revealer: Gtk.Revealer = Gtk.Template.Child()  # type: ignore
     scale: Gtk.Scale = Gtk.Template.Child()  # type: ignore
 
     CAP_SEPARATE_XY_RESOLUTION = False
     CAP_DISABLE = False
+    CAP_LOD = False
 
     def __init__(
         self, resolution: RatbagdResolution, resolutions_page, *args, **kwargs
@@ -87,6 +92,8 @@ class ResolutionRow(Gtk.ListBoxRow):
             self.CAP_SEPARATE_XY_RESOLUTION = True
         if RatbagdResolution.CAP_DISABLE in resolution.capabilities:
             self.CAP_DISABLE = True
+        if RatbagdResolution.CAP_LOD in resolution.capabilities:
+            self.CAP_LOD = True
 
         # Set initial values for the UI.
         res = resolution.resolution[0]
@@ -104,7 +111,51 @@ class ResolutionRow(Gtk.ListBoxRow):
         if resolution.is_disabled:
             with self.disable_button.handler_block(self._disabled_button_handler):
                 self.disable_button.set_active(True)
+
+        # Lift-off distance is stored per resolution, so it belongs here and not
+        # in the profile-wide advanced page.
+        cell = Gtk.CellRendererText()
+        self.lod.pack_start(cell, True)
+        self.lod.add_attribute(cell, "text", 0)
+
+        model = Gtk.ListStore(int, str)
+        self._lod_values = [
+            RatbagdResolution.LOD_LOW,
+            RatbagdResolution.LOD_MEDIUM,
+            RatbagdResolution.LOD_HIGH,
+        ]
+        for value in self._lod_values:
+            model.append([value, _(RatbagdResolution.LOD_DESCRIPTION[value])])
+        self.lod.set_model(model)
+
+        if self.CAP_LOD:
+            self._lod_handler = self.lod.connect("changed", self._on_lod_changed)
+            connect_signal_with_weak_ref(
+                self, resolution, "notify::lod", self._on_resolution_lod_changed
+            )
+            self._update_widget_lod()
+        else:
+            self.lod_box.set_visible(False)
+
         self._on_status_changed(resolution, _pspec=None)
+
+    def _update_widget_lod(self) -> None:
+        lod = self._resolution.lod
+        if lod in self._lod_values:
+            with self.lod.handler_block(self._lod_handler):
+                self.lod.set_active(self._lod_values.index(lod))
+        else:
+            with self.lod.handler_block(self._lod_handler):
+                self.lod.set_active(-1)
+
+    def _on_lod_changed(self, combo: Gtk.ComboBox) -> None:
+        idx = combo.get_active()
+        if idx < 0 or idx >= len(self._lod_values):
+            return
+        self._resolution.lod = self._lod_values[idx]
+
+    def _on_resolution_lod_changed(self, resolution, _pspec=None) -> None:
+        self._update_widget_lod()
 
     @Gtk.Template.Callback("_on_change_value")
     def _on_change_value(
