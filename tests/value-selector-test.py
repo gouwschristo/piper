@@ -58,6 +58,12 @@ ENTRIES = [(0, "Off")] + [(ms, f"{ms} ms") for ms in range(100, 1001, 100)]
 
 # --- values, without a window
 selector = ValueSelector()
+
+# The children are built in code, so they start hidden and would only appear if
+# an ancestor called show_all(). A resolution row does not, which left the
+# control as an empty rectangle, so the selector must show them itself.
+assert selector._label.get_visible(), "value label is hidden until show_all()"
+assert selector.get_children(), "selector has no child widget at all"
 selector.set_entries(ENTRIES)
 assert selector.get_active_id() == "0", selector.get_active_id()
 assert selector.get_active_text() == "Off", selector.get_active_text()

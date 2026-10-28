@@ -48,15 +48,15 @@ class ValueSelector(Gtk.MenuButton):
         # readable and the button keeps a usable minimum size.
         self._label.set_width_chars(7)
         self._label.set_ellipsize(Pango.EllipsizeMode.END)
-        box = Gtk.Box(spacing=6)
-        box.pack_start(self._label, True, True, 0)
-        box.pack_start(
+        self._box = Gtk.Box(spacing=6)
+        self._box.pack_start(self._label, True, True, 0)
+        self._box.pack_start(
             Gtk.Image.new_from_icon_name("pan-down-symbolic", Gtk.IconSize.BUTTON),
             False,
             False,
             0,
         )
-        self.add(box)
+        self.add(self._box)
 
         self._listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
         self._listbox.connect("row-activated", self._on_row_activated)
@@ -68,6 +68,11 @@ class ValueSelector(Gtk.MenuButton):
         popover.set_position(Gtk.PositionType.BOTTOM)
         popover.connect("show", self._on_popover_shown)
         self.set_popover(popover)
+
+        # These children are built in code, so they start hidden and would only
+        # appear if an ancestor happened to call show_all(). Not every container
+        # does (a resolution row does not), so show them here.
+        self._box.show_all()
 
     # -- the GtkComboBox-alike surface
 
