@@ -79,6 +79,19 @@ row.lod.set_active(2)
 assert row._resolution.lod == 3, row._resolution.lod
 assert row.lod_box.get_visible()
 
+# The control must be real: it sits on its own line in the expandable area (it
+# used to be squeezed into the narrow, homogeneous button row where it collapsed
+# to nothing) and must request a usable width.
+parent = row.lod.get_parent()
+while parent is not None and parent is not row:
+    parent = parent.get_parent()
+assert row.lod_box.get_parent() is not None
+assert row.lod_box.get_parent() is not row.disable_button.get_parent(), (
+    "LOD control is back inside the button row, where it gets squeezed"
+)
+min_w, natural_w = row.lod.get_preferred_width()
+assert natural_w > 0, "LOD combo requests no space at all"
+
 # A driver without the capability must hide the control entirely.
 class NoLod(FakeResolution):
     capabilities = [RatbagdResolution.CAP_DISABLE]

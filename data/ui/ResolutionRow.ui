@@ -89,6 +89,47 @@
                     <property name="position">0</property>
                   </packing>
                 </child>
+                  <child>
+                    <object class="GtkBox" id="lod_box">
+                      <property name="visible">True</property>
+                      <property name="can-focus">False</property>
+                      <property name="spacing">6</property>
+                      <property name="halign">start</property>
+                      <property name="tooltip-text" translatable="yes">Lift-off distance for this resolution</property>
+                      <child>
+                        <object class="GtkLabel">
+                          <property name="visible">True</property>
+                          <property name="can-focus">False</property>
+                          <property name="label" translatable="yes">Lift-off distance</property>
+                          <property name="track-visited-links">False</property>
+                          <style>
+                            <class name="dim-label"/>
+                          </style>
+                        </object>
+                        <packing>
+                          <property name="expand">False</property>
+                          <property name="fill">True</property>
+                          <property name="position">0</property>
+                        </packing>
+                      </child>
+                      <child>
+                        <object class="GtkComboBox" id="lod">
+                          <property name="visible">True</property>
+                          <property name="can-focus">False</property>
+                        </object>
+                        <packing>
+                          <property name="expand">False</property>
+                          <property name="fill">True</property>
+                          <property name="position">1</property>
+                        </packing>
+                      </child>
+                    </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
                 <child>
                   <object class="GtkBox">
                     <property name="visible">True</property>
@@ -114,47 +155,6 @@
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                         <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkBox" id="lod_box">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="spacing">6</property>
-                        <property name="halign">start</property>
-                        <property name="tooltip-text" translatable="yes">Lift-off distance for this resolution</property>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Lift-off</property>
-                            <property name="track-visited-links">False</property>
-                            <style>
-                              <class name="dim-label"/>
-                            </style>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkComboBox" id="lod">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
                       </packing>
                     </child>
                     <child>
