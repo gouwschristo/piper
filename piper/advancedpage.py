@@ -23,6 +23,8 @@ class AdvancedPage(Gtk.Box):
     angle_snapping: Gtk.Switch = Gtk.Template.Child()  # type: ignore
     bhop_timeout: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
     debounce: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
+    lod: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
+    lod_note: Gtk.Label = Gtk.Template.Child()  # type: ignore
     power_off_timeout: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
     power_save_timeout: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
     report_rate: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
@@ -96,6 +98,7 @@ class AdvancedPage(Gtk.Box):
         self._setup_power_save_timeout(profile)
         self._setup_power_off_timeout(profile)
         self._setup_shift_resolution(profile)
+        self._setup_lod(profile)
 
         self._angle_snapping_switch_handler = self.angle_snapping.connect(
             "state-set", self._on_angle_snapping_switch_state_set
@@ -233,6 +236,58 @@ class AdvancedPage(Gtk.Box):
             profile.power_off_timeout, "power-off-timeout", "power_off_timeout",
             profile.power_off_timeout != -1,
         )
+
+    def _active_resolution(self, profile):
+        """The stage the device is currently using, for profile-level display.
+
+        Lift-off distance is stored per DPI stage, so a profile-level control can
+        only ever show one of them -- the active one.
+        """
+        resolutions = list(profile.resolutions)
+        for res in resolutions:
+            if res.is_active:
+                return res
+        for res in resolutions:
+            if res.is_default:
+                return res
+        return resolutions[0] if resolutions else None
+
+    def _setup_lod(self, profile) -> None:
+        from .ratbagd import RatbagdResolution
+
+        res = self._active_resolution(profile)
+        self._lod_resolution = res
+
+        if res is None or RatbagdResolution.CAP_LOD not in res.capabilities:
+            self.lod.set_sensitive(False)
+            # show_all() runs at the end of __init__, so plain set_visible(False)
+            # would be undone; opt the note out of it first.
+            self.lod_note.set_no_show_all(True)
+            self.lod_note.hide()
+            return
+
+        values = [
+            (RatbagdResolution.LOD_LOW, _("Low")),
+            (RatbagdResolution.LOD_MEDIUM, _("Medium")),
+            (RatbagdResolution.LOD_HIGH, _("High")),
+        ]
+        self._lod_values = [v for v, _ in values]
+        self._make_combo(self.lod, values)
+        self._lod_handler = self.lod.connect("changed", self._on_lod_changed)
+        self._combo_select(self.lod, self._lod_handler, res.lod)
+        connect_signal_with_weak_ref(
+            self, res, "notify::lod", self._on_resolution_lod_changed
+        )
+
+    def _on_lod_changed(self, combo: Gtk.ComboBox) -> None:
+        value = self._combo_value(combo)
+        if value is None or self._lod_resolution is None:
+            return
+        self._lod_resolution.lod = value
+
+    def _on_resolution_lod_changed(self, res, _pspec=None) -> None:
+        if self._lod_resolution is res:
+            self._combo_select(self.lod, self._lod_handler, res.lod)
 
     def _setup_shift_resolution(self, profile) -> None:
         values = [(r.index, f"{r.index}: {r.resolution[0]} dpi") for r in profile.resolutions]

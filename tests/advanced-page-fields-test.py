@@ -37,10 +37,26 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import piper.advancedpage as ap  # noqa: E402
 
 
-class FakeResolution:
-    def __init__(self, index):
+class FakeResolution(GObject.Object):
+    capabilities = [3]  # RatbagdResolution.CAP_LOD
+
+    def __init__(self, index, active=False, lod=2):
+        super().__init__()
         self.index = index
         self.resolution = (100 * (index + 1), 100 * (index + 1))
+        self.is_active = active
+        self.is_default = index == 0
+        self._lod = lod
+
+    @GObject.Property(type=object)
+    def lod(self):
+        return self._lod
+
+    @lod.setter
+    def lod(self, value):
+        if value != self._lod:
+            self._lod = value
+            self.notify("lod")
 
 
 class FakeProfile(GObject.Object):
@@ -52,7 +68,7 @@ class FakeProfile(GObject.Object):
 
     def __init__(self, bhop=0, save=60, off=300, shift=0, supported=True):
         super().__init__()
-        self.resolutions = [FakeResolution(i) for i in range(3)]
+        self.resolutions = [FakeResolution(i, active=(i == 1), lod=2) for i in range(3)]
         self._bhop = bhop if supported else -1
         self._save = save if supported else -1
         self._off = off if supported else -1
@@ -142,5 +158,38 @@ for combo in (
     page2.shift_resolution,
 ):
     assert not combo.get_sensitive(), "control enabled for an unsupported field"
+
+# Lift-off distance is shown for the *active* stage of this profile, with the
+# profile dependence called out in the UI.
+profile3 = FakeProfile()
+page3 = ap.AdvancedPage(None, profile3)
+lod_model = page3.lod.get_model()
+assert [r[1] for r in lod_model] == ["Low", "Medium", "High"], lod_model
+assert page3._combo_value(page3.lod) == 2
+assert page3.lod_note.get_visible()
+assert "profile" in page3.lod_note.get_label().lower()
+
+page3.lod.set_active(2)                       # High
+assert profile3.resolutions[1].lod == 3, profile3.resolutions[1].lod
+assert profile3.resolutions[0].lod == 2, "inactive stage must not change"
+
+# An external change to the active stage updates the control.
+profile3.resolutions[1].lod = 1
+assert page3._combo_value(page3.lod) == 1
+
+# A profile whose active stage has no LOD control disables the row and hides
+# the explanation rather than showing a dead setting.
+class NoLodResolution(FakeResolution):
+    capabilities = []
+
+    def __init__(self, index, active=False):
+        super().__init__(index, active)
+
+
+nolod = FakeProfile()
+nolod.resolutions = [NoLodResolution(i, active=(i == 0)) for i in range(3)]
+page4 = ap.AdvancedPage(None, nolod)
+assert not page4.lod.get_sensitive()
+assert not page4.lod_note.get_visible()
 
 print("advanced page extended fields: OK")

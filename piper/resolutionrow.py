@@ -137,7 +137,8 @@ class ResolutionRow(Gtk.ListBoxRow):
             )
             self._update_widget_lod()
         else:
-            self.lod_box.set_visible(False)
+            self.lod_box.set_no_show_all(True)
+            self.lod_box.hide()
 
         self._on_status_changed(resolution, _pspec=None)
 

@@ -43,10 +43,17 @@ RATES = [125, 250, 500, 1000, 2000, 4000, 8000]
 CURRENT = 4000
 
 
-class FakeResolution:
+class FakeResolution(GObject.Object):
+    """Minimal stand-in for RatbagdResolution (LOD is not under test here)."""
+    capabilities = []
+
     def __init__(self, index):
+        super().__init__()
         self.index = index
         self.resolution = (400 * (index + 1), 400 * (index + 1))
+        self.is_active = index == 0
+        self.is_default = index == 0
+        self.lod = 0
 
 
 class FakeProfile(GObject.Object):
