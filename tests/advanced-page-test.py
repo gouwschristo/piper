@@ -43,6 +43,12 @@ RATES = [125, 250, 500, 1000, 2000, 4000, 8000]
 CURRENT = 4000
 
 
+class FakeResolution:
+    def __init__(self, index):
+        self.index = index
+        self.resolution = (400 * (index + 1), 400 * (index + 1))
+
+
 class FakeProfile(GObject.Object):
     debounce = 0
     debounces = [0, 4, 8]
@@ -50,6 +56,12 @@ class FakeProfile(GObject.Object):
     report_rates = RATES
     report_rate = CURRENT
     name = "fake"
+    # Not under test here; present so AdvancedPage can build its other rows.
+    bhop_timeout = 0
+    power_save_timeout = 60
+    power_off_timeout = 300
+    shift_resolution = 0
+    resolutions = [FakeResolution(0), FakeResolution(1)]
 
 
 class StubMap(Gtk.Box):

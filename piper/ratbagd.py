@@ -439,6 +439,10 @@ class RatbagdProfile(_RatbagdDBus):
         super().__init__("Profile", object_path)
         self._active = self._get_dbus_property("IsActive")
         self._angle_snapping = self._get_dbus_property("AngleSnapping")
+        self._bhop_timeout = self._get_dbus_property("BhopTimeout")
+        self._power_save_timeout = self._get_dbus_property("PowerSaveTimeout")
+        self._power_off_timeout = self._get_dbus_property("PowerOffTimeout")
+        self._shift_resolution = self._get_dbus_property("ShiftResolution")
         self._debounce = self._get_dbus_property("Debounce")
         self._dirty = self._get_dbus_property("IsDirty")
         self._disabled = self._get_dbus_property("Disabled")
@@ -477,6 +481,20 @@ class RatbagdProfile(_RatbagdDBus):
             if angle_snapping != self._angle_snapping:
                 self._angle_snapping = angle_snapping
                 self.notify("angle-snapping")
+
+        for dbus_name, attr, signal in (
+            ("BhopTimeout", "_bhop_timeout", "bhop-timeout"),
+            ("PowerSaveTimeout", "_power_save_timeout", "power-save-timeout"),
+            ("PowerOffTimeout", "_power_off_timeout", "power-off-timeout"),
+            ("ShiftResolution", "_shift_resolution", "shift-resolution"),
+        ):
+            try:
+                value = changed_props[dbus_name]
+            except KeyError:
+                continue
+            if value != getattr(self, attr):
+                setattr(self, attr, value)
+                self.notify(signal)
 
         try:
             debounce = changed_props["Debounce"]
@@ -594,6 +612,43 @@ class RatbagdProfile(_RatbagdDBus):
     def angle_snapping(self):
         """The angle snapping option."""
         return self._angle_snapping
+
+    @GObject.Property
+    def bhop_timeout(self):
+        """Bunny-hopping timeout in ms, -1 if unsupported."""
+        return self._bhop_timeout
+
+    @bhop_timeout.setter
+    def bhop_timeout(self, value):
+        self._set_dbus_property("BhopTimeout", "i", value)
+
+    @GObject.Property
+    def power_save_timeout(self):
+        """Power-save timeout in seconds, -1 if unsupported."""
+        return self._power_save_timeout
+
+    @power_save_timeout.setter
+    def power_save_timeout(self, value):
+        self._set_dbus_property("PowerSaveTimeout", "i", value)
+
+    @GObject.Property
+    def power_off_timeout(self):
+        """Power-off timeout in seconds, -1 if unsupported."""
+        return self._power_off_timeout
+
+    @power_off_timeout.setter
+    def power_off_timeout(self, value):
+        self._set_dbus_property("PowerOffTimeout", "i", value)
+
+    @GObject.Property
+    def shift_resolution(self):
+        """Resolution index used while the alternate-DPI action is held,
+        -1 if unsupported."""
+        return self._shift_resolution
+
+    @shift_resolution.setter
+    def shift_resolution(self, value):
+        self._set_dbus_property("ShiftResolution", "i", value)
 
     @angle_snapping.setter
     def angle_snapping(self, value):
