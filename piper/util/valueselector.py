@@ -42,6 +42,11 @@ class ValueSelector(Gtk.MenuButton):
         self._value: Optional[int] = None
 
         self._label = Gtk.Label(xalign=0)
+        # Ellipsized labels report a minimum width of ~0, which lets the whole
+        # button collapse to just its arrow in a narrow column (the LOD control
+        # in a resolution row). width-chars is a floor, so the value stays
+        # readable and the button keeps a usable minimum size.
+        self._label.set_width_chars(7)
         self._label.set_ellipsize(Pango.EllipsizeMode.END)
         box = Gtk.Box(spacing=6)
         box.pack_start(self._label, True, True, 0)

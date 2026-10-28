@@ -101,6 +101,8 @@
                           <property name="visible">True</property>
                           <property name="can-focus">False</property>
                           <property name="label" translatable="yes">Lift-off distance</property>
+                          <property name="ellipsize">end</property>
+                          <property name="max-width-chars">16</property>
                           <property name="track-visited-links">False</property>
                           <style>
                             <class name="dim-label"/>
@@ -116,6 +118,7 @@
                         <object class="PiperValueSelector" id="lod">
                           <property name="visible">True</property>
                           <property name="can-focus">False</property>
+                          <property name="width-request">120</property>
                         </object>
                         <packing>
                           <property name="expand">False</property>

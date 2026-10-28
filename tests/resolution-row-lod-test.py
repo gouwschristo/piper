@@ -93,6 +93,16 @@ assert row.lod_box.get_parent() is not row.disable_button.get_parent(), (
 min_w, natural_w = row.lod.get_preferred_width()
 assert natural_w > 0, "LOD combo requests no space at all"
 
+# The control must keep a usable width even when the row is narrow: it used to
+# collapse to just its arrow, because an ellipsized label reports a minimum of
+# ~0 and a plain caption cannot shrink.
+assert min_w >= 100, f"LOD control can shrink to {min_w}px, it would collapse"
+caption = row.lod_box.get_children()[0]
+caption_min, _ = caption.get_preferred_width()
+assert caption_min < 60, (
+    f"caption cannot shrink (minimum {caption_min}px), so it squeezes the control"
+)
+
 # The combo must render the label ("Medium"), not the raw device value.
 assert row.lod.get_active_text() in ("Low", "Medium", "High"), (
     f"combo shows {row.lod.get_active_text()!r}, expected a label"
