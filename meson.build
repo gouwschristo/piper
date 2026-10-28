@@ -136,6 +136,12 @@ test(
 )
 
 test(
+  'advanced-page-report-rates',
+  find_program('tests/advanced-page-test.py'),
+  env : ['PIPER_PKGDATADIR=@0@'.format(pkgdatadir)],
+)
+
+test(
   'files-in-git',
   find_program('tests/check-files-in-git.sh'),
   args : [meson.current_source_dir()],

@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-import sys
 from typing import Optional
 import gi
 
@@ -22,11 +21,7 @@ class AdvancedPage(Gtk.Box):
 
     angle_snapping: Gtk.Switch = Gtk.Template.Child()  # type: ignore
     debounce: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
-    rate_1000: Gtk.RadioButton = Gtk.Template.Child()  # type: ignore
-    rate_125: Gtk.RadioButton = Gtk.Template.Child()  # type: ignore
-    rate_250: Gtk.RadioButton = Gtk.Template.Child()  # type: ignore
-    rate_500: Gtk.RadioButton = Gtk.Template.Child()  # type: ignore
-    rate_button_box: Gtk.ButtonBox = Gtk.Template.Child()  # type: ignore
+    report_rate: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
 
     def __init__(
         self, device: RatbagdDevice, profile: RatbagdProfile, *args, **kwargs
@@ -57,26 +52,26 @@ class AdvancedPage(Gtk.Box):
         )
         self._update_widget_debounce_time()
 
-        are_report_rates_supported = (
-            profile.report_rate != 0 and len(profile.report_rates) != 0
-        )
-        self.rate_button_box.set_sensitive(are_report_rates_supported)
-        self.rate_125.set_sensitive(125 in profile.report_rates)
-        self.rate_250.set_sensitive(250 in profile.report_rates)
-        self.rate_500.set_sensitive(500 in profile.report_rates)
-        self.rate_1000.set_sensitive(1000 in profile.report_rates)
+        # The rate list comes from the device, which may offer more than the
+        # four classic 125/250/500/1000 Hz steps (e.g. 2000/4000/8000 Hz on
+        # LIGHTSPEED mice). Listing them dynamically keeps every rate the
+        # profile reports selectable.
+        self._rates = list(profile.report_rates)
+        cell = Gtk.CellRendererText()
+        self.report_rate.pack_start(cell, True)
+        self.report_rate.add_attribute(cell, "text", 0)
 
-        self._handler_125 = self.rate_125.connect(
-            "toggled", self._on_report_rate_toggled, 125
+        model = Gtk.ListStore(str)
+        for hz in self._rates:
+            model.append([str(hz)])
+        self.report_rate.set_model(model)
+
+        self.report_rate.set_sensitive(
+            profile.report_rate != 0 and len(self._rates) != 0
         )
-        self._handler_250 = self.rate_250.connect(
-            "toggled", self._on_report_rate_toggled, 250
-        )
-        self._handler_500 = self.rate_500.connect(
-            "toggled", self._on_report_rate_toggled, 500
-        )
-        self._handler_1000 = self.rate_1000.connect(
-            "toggled", self._on_report_rate_toggled, 1000
+
+        self._handler_report_rate = self.report_rate.connect(
+            "changed", self._on_report_rate_changed
         )
 
         self._profile_report_rate_changed_handler = connect_signal_with_weak_ref(
@@ -145,12 +140,13 @@ class AdvancedPage(Gtk.Box):
         with self.angle_snapping.handler_block(self._angle_snapping_switch_handler):
             self.angle_snapping.set_active(self._profile.angle_snapping == 1)
 
-    def _on_report_rate_toggled(self, button: Gtk.RadioButton, rate: int) -> None:
-        if not button.get_active():
+    def _on_report_rate_changed(self, combo: Gtk.ComboBox) -> None:
+        idx = combo.get_active()
+        if idx < 0 or idx >= len(self._rates):
             return
         profile = self._profile
         with profile.handler_block(self._profile_report_rate_changed_handler):
-            profile.report_rate = rate
+            profile.report_rate = self._rates[idx]
 
     def _on_profile_report_rate_changed(
         self, profile: RatbagdProfile, pspec: Optional[GObject.ParamSpec]
@@ -158,28 +154,12 @@ class AdvancedPage(Gtk.Box):
         self._update_widget_report_rate()
 
     def _update_widget_report_rate(self) -> None:
-        with self.rate_125.handler_block(self._handler_125):
-            if self._profile.report_rate == 125:
-                self.rate_125.set_active(True)
-                return
+        rate = self._profile.report_rate
 
-        with self.rate_250.handler_block(self._handler_250):
-            if self._profile.report_rate == 250:
-                self.rate_250.set_active(True)
-                return
-
-        with self.rate_500.handler_block(self._handler_500):
-            if self._profile.report_rate == 500:
-                self.rate_500.set_active(True)
-                return
-
-        with self.rate_1000.handler_block(self._handler_1000):
-            if self._profile.report_rate == 1000:
-                self.rate_1000.set_active(True)
-                return
-
-        # TODO: think how we should handle this.
-        print(
-            f"Profile was set to a weird report rate: {self._profile.report_rate}",
-            file=sys.stderr,
-        )
+        with self.report_rate.handler_block(self._handler_report_rate):
+            if rate in self._rates:
+                self.report_rate.set_active(self._rates.index(rate))
+            else:
+                # A rate the device no longer advertises: show nothing rather
+                # than silently claiming a different rate is selected.
+                self.report_rate.set_active(-1)
