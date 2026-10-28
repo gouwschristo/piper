@@ -38,11 +38,42 @@ import piper.mouseperspective as mp  # noqa: E402
 from piper.ratbagd import RatbagBatteryStatus  # noqa: E402
 
 
+class FakeProfile(GObject.Object):
+    index = 0
+    name = "Osax"
+    disabled = False
+    dirty = False
+
+    def __init__(self):
+        super().__init__()
+
+
 class FakeDevice(GObject.Object):
+    __gsignals__ = {
+        "resync": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "active-profile-changed": (
+            GObject.SignalFlags.RUN_FIRST,
+            None,
+            (GObject.TYPE_PYOBJECT,),
+        ),
+    }
+
+    name = "Logitech PRO X 2"
+    model = "usb:046d:40a9:0"
+
     def __init__(self, percentage=64, status=RatbagBatteryStatus.DISCHARGING):
         super().__init__()
         self._percentage = percentage
         self._status = status
+        self._profile = FakeProfile()
+
+    @GObject.Property(type=object)
+    def profiles(self):
+        return [self._profile]
+
+    @property
+    def active_profile(self):
+        return self._profile
 
     @GObject.Property(type=int, default=-1)
     def battery_percentage(self):
@@ -109,5 +140,14 @@ if perspective.image_battery.get_visible():
 perspective._update_battery(FakeDevice(status=RatbagBatteryStatus.RECHARGING))
 if perspective.image_battery.get_visible():
     assert "charging" in perspective.image_battery.get_icon_name()[0]
+
+# The main screen must say which device is being configured.
+perspective._update_device_label(device)
+assert perspective.label_device.get_label() == "Logitech PRO X 2", (
+    perspective.label_device.get_label()
+)
+assert "PRO X 2" in (perspective.label_device.get_tooltip_text() or ""), (
+    perspective.label_device.get_tooltip_text()
+)
 
 print("device status header: OK")

@@ -177,6 +177,7 @@ class Window(Gtk.ApplicationWindow):
 
     def _present_mouse_perspective(self, device: RatbagdDevice) -> None:
         # Present the mouse configuration perspective for the given device.
+        self.set_title(f"{device.name} — Piper")
         try:
             mouse_perspective: MousePerspective = self._get_child("mouse_perspective")  # type: ignore
             mouse_perspective.set_device(device)

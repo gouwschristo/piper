@@ -28,6 +28,7 @@ class MousePerspective(Gtk.Overlay):
     button_commit: Gtk.Button = Gtk.Template.Child()  # type: ignore
     button_profile: Gtk.Button = Gtk.Template.Child()  # type: ignore
     box_battery: Gtk.Box = Gtk.Template.Child()  # type: ignore
+    label_device: Gtk.Label = Gtk.Template.Child()  # type: ignore
     image_battery: Gtk.Image = Gtk.Template.Child()  # type: ignore
     label_battery: Gtk.Label = Gtk.Template.Child()  # type: ignore
     label_profile: Gtk.Label = Gtk.Template.Child()  # type: ignore
@@ -73,6 +74,8 @@ class MousePerspective(Gtk.Overlay):
 
     def set_device(self, device: RatbagdDevice) -> None:
         self._device = device
+
+        self._update_device_label(device)
 
         # The header shows the charge of the device itself, not of a profile.
         self.box_battery.set_no_show_all(True)
@@ -120,6 +123,14 @@ class MousePerspective(Gtk.Overlay):
         (30, "battery-low-symbolic"),
         (0, "battery-caution-symbolic"),
     )
+
+    def _update_device_label(self, device: RatbagdDevice) -> None:
+        """Put the make and model in the header, so the main screen says what is
+        being configured."""
+        name = device.name or ""
+        model = device.model or ""
+        self.label_device.set_label(name)
+        self.label_device.set_tooltip_text(f"{name} ({model})" if model else name)
 
     def _update_battery(self, device: RatbagdDevice) -> None:
         if not device.has_battery:
