@@ -49,6 +49,13 @@ class AdvancedPage(Gtk.Box):
         for ms in profile.debounces:
             model.append([str(ms)])
         self.debounce.set_model(model)
+        if not profile.debounces:
+            # No values means the device does not do debounce at all; an empty
+            # but enabled dropdown is worse than a disabled one.
+            self.debounce.set_sensitive(False)
+            self.debounce.set_tooltip_text(
+                _("This device does not support debounce time")
+            )
 
         self._handler_debounce = self.debounce.connect(
             "changed", self._on_debounce_combo_changed
@@ -132,8 +139,10 @@ class AdvancedPage(Gtk.Box):
             if profile.debounce in profile.debounces:
                 idx = profile.debounces.index(profile.debounce)
                 self.debounce.set_active(idx)
-            else:
+            elif profile.debounces:
                 self.debounce.set_active(0)
+            else:
+                self.debounce.set_active(-1)
 
     def _on_debounce_combo_changed(self, combo: Gtk.ComboBox) -> None:
         idx = combo.get_active()

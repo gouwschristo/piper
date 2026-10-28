@@ -199,12 +199,40 @@
         <property name="tooltip-text" translatable="yes">Select another profile</property>
         <property name="popover">popover_profiles</property>
         <child>
-          <object class="GtkLabel" id="label_profile">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label">Profile 1</property>
-            <property name="justify">center</property>
-            <property name="track-visited-links">False</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="label_profile_caption">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Profile</property>
+                <property name="track-visited-links">False</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label_profile">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label">Profile 1</property>
+                <property name="justify">center</property>
+                <property name="track-visited-links">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
         </child>
       </object>
