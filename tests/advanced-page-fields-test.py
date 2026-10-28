@@ -111,6 +111,27 @@ class FakeProfile(GObject.Object):
         self.notify("shift-resolution")
 
 
+class FakeDevice(GObject.Object):
+    def __init__(self, onboard=True, supported=True):
+        super().__init__()
+        self._onboard = onboard
+        self._supported = supported
+
+    @GObject.Property(type=bool, default=False)
+    def has_onboard_mode_capability(self):
+        return self._supported
+
+    @GObject.Property(type=bool, default=False)
+    def onboard_mode(self):
+        return self._onboard
+
+    @onboard_mode.setter
+    def onboard_mode(self, value):
+        if value != self._onboard:
+            self._onboard = value
+            self.notify("onboard-mode")
+
+
 class StubMap(Gtk.Box):
     def __init__(self, *a, **k):
         Gtk.Box.__init__(self)
@@ -191,5 +212,28 @@ nolod.resolutions = [NoLodResolution(i, active=(i == 0)) for i in range(3)]
 page4 = ap.AdvancedPage(None, nolod)
 assert not page4.lod.get_sensitive()
 assert not page4.lod_note.get_visible()
+
+# Device mode is a device-wide toggle, not a profile value: it must be offered
+# only when the device reports the capability, and changing it must reach the
+# device immediately rather than waiting for a commit.
+device = FakeDevice(onboard=True)
+page5 = ap.AdvancedPage(device, FakeProfile())
+assert page5.device_mode_row.get_visible(), "mode row hidden for a capable device"
+assert page5.device_mode_note.get_visible()
+mode = [row[0] for row in page5.device_mode.get_model()]
+assert mode == [1, 0], mode
+assert page5._combo_value(page5.device_mode) == 1
+
+page5.device_mode.set_active(mode.index(0))       # Host (software) control
+assert device.onboard_mode is False, device.onboard_mode
+
+# An external change (from ratbagctl, say) updates the control.
+device.onboard_mode = True
+assert page5._combo_value(page5.device_mode) == 1
+
+# A device without the switch must not show a dead row.
+page6 = ap.AdvancedPage(FakeDevice(supported=False), FakeProfile())
+assert not page6.device_mode_row.get_visible()
+assert not page6.device_mode_note.get_visible()
 
 print("advanced page extended fields: OK")

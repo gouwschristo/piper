@@ -69,6 +69,15 @@ class RatbagErrorCode(IntEnum):
     IMPLEMENTATION = -1004
 
 
+class RatbagBatteryStatus(IntEnum):
+    """The battery status of a device."""
+
+    UNKNOWN = 0
+    DISCHARGING = 1
+    RECHARGING = 2
+    FULL = 3
+
+
 class RatbagDeviceType(IntEnum):
     """DeviceType property specified in the .device files"""
 
@@ -395,6 +404,38 @@ class RatbagdDevice(_RatbagdDBus):
     def firmware_version(self):
         """The firmware version of the device."""
         return self._get_dbus_property("FirmwareVersion")
+
+    @GObject.Property
+    def battery_percentage(self):
+        """The device battery charge in percent, or -1 when the device does not
+        report a battery."""
+        return self._get_dbus_property("BatteryPercentage")
+
+    @GObject.Property
+    def battery_status(self):
+        """The device battery status, see RatbagBatteryStatus."""
+        return RatbagBatteryStatus(self._get_dbus_property("BatteryStatus"))
+
+    @GObject.Property
+    def has_battery(self):
+        """Whether the device reports its battery state."""
+        return self.battery_percentage >= 0
+
+    @GObject.Property
+    def has_onboard_mode_capability(self):
+        """Whether the device can switch between its on-board profiles and the
+        host-driven mode."""
+        return bool(self._get_dbus_property("HasOnboardMode"))
+
+    @GObject.Property
+    def onboard_mode(self):
+        """True if the device is applying the profiles stored in its own
+        memory, False if the host software drives it."""
+        return self._get_dbus_property("OnboardMode")
+
+    @onboard_mode.setter
+    def onboard_mode(self, enable):
+        self._set_dbus_property("OnboardMode", "b", bool(enable))
 
     @GObject.Property
     def profiles(self):

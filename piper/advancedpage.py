@@ -23,6 +23,9 @@ class AdvancedPage(Gtk.Box):
     angle_snapping: Gtk.Switch = Gtk.Template.Child()  # type: ignore
     bhop_timeout: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
     debounce: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
+    device_mode: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
+    device_mode_note: Gtk.Label = Gtk.Template.Child()  # type: ignore
+    device_mode_row: Gtk.Box = Gtk.Template.Child()  # type: ignore
     lod: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
     lod_note: Gtk.Label = Gtk.Template.Child()  # type: ignore
     power_off_timeout: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
@@ -99,6 +102,7 @@ class AdvancedPage(Gtk.Box):
         self._setup_power_off_timeout(profile)
         self._setup_shift_resolution(profile)
         self._setup_lod(profile)
+        self._setup_device_mode(device)
 
         self._angle_snapping_switch_handler = self.angle_snapping.connect(
             "state-set", self._on_angle_snapping_switch_state_set
@@ -288,6 +292,55 @@ class AdvancedPage(Gtk.Box):
     def _on_resolution_lod_changed(self, res, _pspec=None) -> None:
         if self._lod_resolution is res:
             self._combo_select(self.lod, self._lod_handler, res.lod)
+
+    def _setup_device_mode(self, device: RatbagdDevice) -> None:
+        # Device mode is a device-wide toggle, not a profile value: the mouse
+        # either applies the profiles stored in its own flash or lets the host
+        # drive it. Devices without the switch do not show the row at all.
+        for widget in (self.device_mode_row, self.device_mode_note):
+            widget.set_no_show_all(True)
+
+        if device is None or not device.has_onboard_mode_capability:
+            self.device_mode_row.hide()
+            self.device_mode_note.hide()
+            return
+
+        self._device = device
+        self._make_combo(
+            self.device_mode,
+            [
+                (1, _("On-board profiles")),
+                (0, _("Host (software) control")),
+            ],
+        )
+        self._device_mode_handler = self.device_mode.connect(
+            "changed", self._on_device_mode_changed
+        )
+        self._combo_select(
+            self.device_mode,
+            self._device_mode_handler,
+            1 if device.onboard_mode else 0,
+        )
+        connect_signal_with_weak_ref(
+            self,
+            device,
+            "notify::onboard-mode",
+            self._on_device_onboard_mode_changed,
+        )
+
+    def _on_device_mode_changed(self, combo: Gtk.ComboBox) -> None:
+        value = self._combo_value(combo)
+        if value is None or self._device is None:
+            return
+        if bool(value) != self._device.onboard_mode:
+            self._device.onboard_mode = bool(value)
+
+    def _on_device_onboard_mode_changed(self, device, _pspec=None) -> None:
+        self._combo_select(
+            self.device_mode,
+            self._device_mode_handler,
+            1 if device.onboard_mode else 0,
+        )
 
     def _setup_shift_resolution(self, profile) -> None:
         values = [(r.index, f"{r.index}: {r.resolution[0]} dpi") for r in profile.resolutions]

@@ -407,6 +407,66 @@
                 <property name="position">8</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkBox" id="device_mode_row">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="spacing">20</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="halign">end</property>
+                    <property name="label" translatable="yes">Device mode</property>
+                    <property name="justify">right</property>
+                    <property name="track-visited-links">False</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBox" id="device_mode">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="tooltip-text" translatable="yes">Whether the mouse applies the profiles stored in its own memory or lets the software drive it</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">9</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="device_mode_note">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">On-board mode applies the profiles stored in the mouse itself, so the same settings work on any computer. Host mode stops the mouse from applying them and leaves control to the computer — ratbagd only writes on-board profiles, so use host mode only if another tool on the host drives the mouse. The switch takes effect immediately and is not part of a profile.</property>
+                <property name="wrap">True</property>
+                <property name="max-width-chars">60</property>
+                <property name="xalign">0</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">10</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>

@@ -5,7 +5,7 @@ from typing import Optional
 
 from .buttonspage import ButtonsPage
 from .profilerow import ProfileRow
-from .ratbagd import RatbagdDevice, RatbagdProfile
+from .ratbagd import RatbagBatteryStatus, RatbagdDevice, RatbagdProfile
 from .resolutionspage import ResolutionsPage
 from .advancedpage import AdvancedPage
 from .ledspage import LedsPage
@@ -27,6 +27,9 @@ class MousePerspective(Gtk.Overlay):
     add_profile_button: Gtk.Button = Gtk.Template.Child()  # type: ignore
     button_commit: Gtk.Button = Gtk.Template.Child()  # type: ignore
     button_profile: Gtk.Button = Gtk.Template.Child()  # type: ignore
+    box_battery: Gtk.Box = Gtk.Template.Child()  # type: ignore
+    image_battery: Gtk.Image = Gtk.Template.Child()  # type: ignore
+    label_battery: Gtk.Label = Gtk.Template.Child()  # type: ignore
     label_profile: Gtk.Label = Gtk.Template.Child()  # type: ignore
     listbox_profiles: Gtk.ListBox = Gtk.Template.Child()  # type: ignore
     notification_error: Gtk.Revealer = Gtk.Template.Child()  # type: ignore
@@ -70,6 +73,16 @@ class MousePerspective(Gtk.Overlay):
 
     def set_device(self, device: RatbagdDevice) -> None:
         self._device = device
+
+        # The header shows the charge of the device itself, not of a profile.
+        self.box_battery.set_no_show_all(True)
+        self._update_battery(device)
+        connect_signal_with_weak_ref(
+            self,
+            device,
+            "notify::battery-percentage",
+            self._on_device_battery_changed,
+        )
         connect_signal_with_weak_ref(
             self, device, "resync", lambda _: self._show_notification_error()
         )
@@ -100,6 +113,48 @@ class MousePerspective(Gtk.Overlay):
         self._on_profile_notify_disabled(active_profile, None)
 
         self._select_profile_row(active_profile)
+
+    _BATTERY_ICONS = (
+        (90, "battery-full-symbolic"),
+        (60, "battery-good-symbolic"),
+        (30, "battery-low-symbolic"),
+        (0, "battery-caution-symbolic"),
+    )
+
+    def _update_battery(self, device: RatbagdDevice) -> None:
+        if not device.has_battery:
+            self.box_battery.hide()
+            return
+
+        percentage = device.battery_percentage
+        status = device.battery_status
+        tooltip = {
+            RatbagBatteryStatus.DISCHARGING: _("Running on battery"),
+            RatbagBatteryStatus.RECHARGING: _("Charging"),
+            RatbagBatteryStatus.FULL: _("Fully charged"),
+        }.get(status, _("Battery status unknown"))
+        self.label_battery.set_label(f"{percentage}%")
+        self.label_battery.set_tooltip_text(tooltip)
+
+        icon = next(
+            name for threshold, name in self._BATTERY_ICONS if percentage >= threshold
+        )
+        if status == RatbagBatteryStatus.RECHARGING:
+            icon = "battery-level-0-charging-symbolic"
+        elif status == RatbagBatteryStatus.FULL:
+            icon = "battery-full-charged-symbolic"
+
+        theme = Gtk.IconTheme.get_default()
+        if theme is not None and theme.has_icon(icon):
+            self.image_battery.set_from_icon_name(icon, Gtk.IconSize.BUTTON)
+            self.image_battery.show()
+        else:
+            self.image_battery.hide()
+
+        self.box_battery.show()
+
+    def _on_device_battery_changed(self, device, _pspec=None) -> None:
+        self._update_battery(device)
 
     def _select_profile_row(self, profile: RatbagdProfile) -> None:
         for row in self.listbox_profiles.get_children():

@@ -142,6 +142,12 @@ test(
 )
 
 test(
+  'device-status',
+  find_program('tests/device-status-test.py'),
+  env : ['PIPER_PKGDATADIR=@0@'.format(pkgdatadir)],
+)
+
+test(
   'resolution-row-lod',
   find_program('tests/resolution-row-lod-test.py'),
   env : ['PIPER_PKGDATADIR=@0@'.format(pkgdatadir)],
