@@ -143,7 +143,7 @@ profile = FakeProfile(bhop=0, save=60, off=300, shift=2)
 page = ap.AdvancedPage(None, profile)
 
 # BHOP: "Off" plus 100..1000 ms
-bhop = [row[0] for row in page.bhop_timeout.get_model()]
+bhop = [value for value, _ in page._combo_entries[page.bhop_timeout]]
 assert bhop == [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], bhop
 assert page._combo_value(page.bhop_timeout) == 0
 
@@ -154,14 +154,11 @@ assert profile.bhop_timeout == 300, profile.bhop_timeout
 
 # power timeouts reflect the device value and write through
 assert page._combo_value(page.power_save_timeout) == 60
-page.power_save_timeout.set_active(
-    [r[0] for r in page.power_save_timeout.get_model()].index(120)
-)
+page.power_save_timeout.set_active_id("120")
 assert profile.power_save_timeout == 120, profile.power_save_timeout
 assert page._combo_value(page.power_off_timeout) == 300
 
 # shift resolution lists the profile's resolutions
-shift = page.shift_resolution.get_model()
 assert page.shift_resolution.get_active() >= 0
 assert page._combo_value(page.shift_resolution) == 2
 
@@ -184,8 +181,8 @@ for combo in (
 # profile dependence called out in the UI.
 profile3 = FakeProfile()
 page3 = ap.AdvancedPage(None, profile3)
-lod_model = page3.lod.get_model()
-assert [r[1] for r in lod_model] == ["Low", "Medium", "High"], lod_model
+lod_labels = [label for _, label in page3._combo_entries[page3.lod]]
+assert lod_labels == ["Low", "Medium", "High"], lod_labels
 assert page3._combo_value(page3.lod) == 2
 assert page3.lod_note.get_visible()
 assert "profile" in page3.lod_note.get_label().lower()
@@ -220,7 +217,7 @@ device = FakeDevice(onboard=True)
 page5 = ap.AdvancedPage(device, FakeProfile())
 assert page5.device_mode_row.get_visible(), "mode row hidden for a capable device"
 assert page5.device_mode_note.get_visible()
-mode = [row[0] for row in page5.device_mode.get_model()]
+mode = [value for value, _ in page5._combo_entries[page5.device_mode]]
 assert mode == [1, 0], mode
 assert page5._combo_value(page5.device_mode) == 1
 

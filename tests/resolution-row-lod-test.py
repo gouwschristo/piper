@@ -66,13 +66,14 @@ class Page:
 
 
 row = ResolutionRow(FakeResolution(2), Page())
-model = row.lod.get_model()
-labels = [r[1] for r in model]
+labels = row._lod_labels
 assert labels == ["Low", "Medium", "High"], labels
 
-idx = row.lod.get_active()
-assert idx >= 0, "no LOD selected for a value the device reports"
-assert int(model[idx][0]) == 2, f"selected {model[idx][0]}, expected the device value 2"
+assert row.lod.get_active() >= 0, "no LOD selected for a value the device reports"
+assert row.lod.get_active_id() == "2", (
+    f"selected {row.lod.get_active_id()}, expected the device value 2"
+)
+assert row.lod.get_active_text() == "Medium", row.lod.get_active_text()
 
 # Selecting High must be written through to the resolution.
 row.lod.set_active(2)
@@ -93,9 +94,8 @@ min_w, natural_w = row.lod.get_preferred_width()
 assert natural_w > 0, "LOD combo requests no space at all"
 
 # The combo must render the label ("Medium"), not the raw device value.
-cell = row.lod.get_cells()[0]
-assert cell.get_property("text") in ("Low", "Medium", "High"), (
-    f"combo shows {cell.get_property('text')!r}, expected a label"
+assert row.lod.get_active_text() in ("Low", "Medium", "High"), (
+    f"combo shows {row.lod.get_active_text()!r}, expected a label"
 )
 
 # A driver without the capability must hide the control entirely.

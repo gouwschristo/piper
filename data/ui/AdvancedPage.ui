@@ -44,7 +44,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="report_rate">
+                  <object class="GtkComboBoxText" id="report_rate">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Change the profile’s report rate</property>
@@ -103,7 +103,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="debounce">
+                  <object class="GtkComboBoxText" id="debounce">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                   </object>
@@ -203,7 +203,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="bhop_timeout">
+                  <object class="GtkComboBoxText" id="bhop_timeout">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Delay before the sensor stops reporting movement for bunny-hopping</property>
@@ -245,7 +245,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="power_save_timeout">
+                  <object class="GtkComboBoxText" id="power_save_timeout">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">How long the device stays awake after the last input</property>
@@ -287,7 +287,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="power_off_timeout">
+                  <object class="GtkComboBoxText" id="power_off_timeout">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">How long before the device powers itself off</property>
@@ -329,7 +329,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="shift_resolution">
+                  <object class="GtkComboBoxText" id="shift_resolution">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Resolution used while the alternate-DPI (G-shift) action is held</property>
@@ -371,7 +371,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="lod">
+                  <object class="GtkComboBoxText" id="lod">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Lift-off distance of the active DPI stage</property>
@@ -431,7 +431,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="device_mode">
+                  <object class="GtkComboBoxText" id="device_mode">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Whether the mouse applies the profiles stored in its own memory or lets the software drive it</property>

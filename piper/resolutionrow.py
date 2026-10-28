@@ -7,6 +7,7 @@ import gi
 from gettext import gettext as _
 
 from .ratbagd import RatbagdResolution
+from .util.popup import ensure_popup_sized
 from .util.gobject import connect_signal_with_weak_ref
 
 gi.require_version("Gtk", "3.0")
@@ -53,7 +54,7 @@ class ResolutionRow(Gtk.ListBoxRow):
     disable_button: Gtk.Button = Gtk.Template.Child()  # type: ignore
     dpi_label: Gtk.Label = Gtk.Template.Child()  # type: ignore
     dpi_entry: _DPIEntry = Gtk.Template.Child()  # type: ignore
-    lod: Gtk.ComboBox = Gtk.Template.Child()  # type: ignore
+    lod: Gtk.ComboBoxText = Gtk.Template.Child()  # type: ignore
     lod_box: Gtk.Box = Gtk.Template.Child()  # type: ignore
     revealer: Gtk.Revealer = Gtk.Template.Child()  # type: ignore
     scale: Gtk.Scale = Gtk.Template.Child()  # type: ignore
@@ -114,21 +115,20 @@ class ResolutionRow(Gtk.ListBoxRow):
 
         # Lift-off distance is stored per resolution, so it belongs here and not
         # in the profile-wide advanced page.
-        cell = Gtk.CellRendererText()
-        self.lod.pack_start(cell, True)
-        # Column 0 holds the device value, column 1 the translated label: show
-        # the label, not the number.
-        self.lod.add_attribute(cell, "text", 1)
-
-        model = Gtk.ListStore(int, str)
+        # GtkComboBoxText, not GtkComboBox: a hand-built cell renderer makes
+        # GTK measure the popup before the rows are sized, so the menu opens
+        # collapsed until it is scrolled.
         self._lod_values = [
             RatbagdResolution.LOD_LOW,
             RatbagdResolution.LOD_MEDIUM,
             RatbagdResolution.LOD_HIGH,
         ]
-        for value in self._lod_values:
-            model.append([value, _(RatbagdResolution.LOD_DESCRIPTION[value])])
-        self.lod.set_model(model)
+        self._lod_labels = [
+            _(RatbagdResolution.LOD_DESCRIPTION[value]) for value in self._lod_values
+        ]
+        for value, label in zip(self._lod_values, self._lod_labels):
+            self.lod.append(str(value), label)
+        ensure_popup_sized(self.lod)
 
         if self.CAP_LOD:
             self._lod_handler = self.lod.connect("changed", self._on_lod_changed)
@@ -144,18 +144,17 @@ class ResolutionRow(Gtk.ListBoxRow):
 
     def _update_widget_lod(self) -> None:
         lod = self._resolution.lod
-        if lod in self._lod_values:
-            with self.lod.handler_block(self._lod_handler):
-                self.lod.set_active(self._lod_values.index(lod))
-        else:
-            with self.lod.handler_block(self._lod_handler):
+        with self.lod.handler_block(self._lod_handler):
+            if lod in self._lod_values:
+                self.lod.set_active_id(str(lod))
+            else:
                 self.lod.set_active(-1)
 
-    def _on_lod_changed(self, combo: Gtk.ComboBox) -> None:
-        idx = combo.get_active()
-        if idx < 0 or idx >= len(self._lod_values):
+    def _on_lod_changed(self, combo: Gtk.ComboBoxText) -> None:
+        active = combo.get_active_id()
+        if active is None:
             return
-        self._resolution.lod = self._lod_values[idx]
+        self._resolution.lod = int(active)
 
     def _on_resolution_lod_changed(self, resolution, _pspec=None) -> None:
         self._update_widget_lod()
