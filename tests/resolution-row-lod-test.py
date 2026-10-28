@@ -92,6 +92,12 @@ assert row.lod_box.get_parent() is not row.disable_button.get_parent(), (
 min_w, natural_w = row.lod.get_preferred_width()
 assert natural_w > 0, "LOD combo requests no space at all"
 
+# The combo must render the label ("Medium"), not the raw device value.
+cell = row.lod.get_cells()[0]
+assert cell.get_property("text") in ("Low", "Medium", "High"), (
+    f"combo shows {cell.get_property('text')!r}, expected a label"
+)
+
 # A driver without the capability must hide the control entirely.
 class NoLod(FakeResolution):
     capabilities = [RatbagdResolution.CAP_DISABLE]

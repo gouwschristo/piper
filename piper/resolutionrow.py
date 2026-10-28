@@ -116,7 +116,9 @@ class ResolutionRow(Gtk.ListBoxRow):
         # in the profile-wide advanced page.
         cell = Gtk.CellRendererText()
         self.lod.pack_start(cell, True)
-        self.lod.add_attribute(cell, "text", 0)
+        # Column 0 holds the device value, column 1 the translated label: show
+        # the label, not the number.
+        self.lod.add_attribute(cell, "text", 1)
 
         model = Gtk.ListStore(int, str)
         self._lod_values = [
